@@ -1,26 +1,28 @@
-	.export process_line
-	.zeropage
-
-ptr:	.byte $00, $00
-L:	.byte $00
-H:	.byte $00
-B:	.byte $00
-C:	.byte $00
-D:	.byte $00
-YSAV:	.byte $00
-
-FIRST_SET:
-	.byte $00
-
-FIRST:	.byte $00
-LAST:	.byte $00
-SUM:	.byte $00, $00
+	; .export ptr, L, H, B, FIRST_SET, FIRST, LAST, SUM
 
 	.code
+	ptr	= $06
+	B	= $FA
+	L	= $08
+	H	= $09
+	FIRST_SET	= $1E
+	FIRST	= $EB
+	LAST	= $EC
+	SUM	= $ED
+
 
 	LF = $0A
 
 start:
+	stz	ptr
+	stz	ptr+1
+	stz	L
+	stz	H
+	stz	FIRST_SET
+	stz	FIRST
+	stz	LAST
+	stz	SUM
+	stz	SUM+1
 	lda	#<puzzle_input
 	sta	ptr
 	lda	#>puzzle_input
@@ -78,7 +80,7 @@ process_line:
 
 	ldx	#$00
 	stx	FIRST_SET
-
+	brk
 	jmp	next_char
 
 ; Multiplies the 16-bit number in LH by 10
