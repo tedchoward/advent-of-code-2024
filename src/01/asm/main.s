@@ -184,7 +184,7 @@ read_next_line:
 ; 	beq	:+
 ; 	brk
 ; :
-	inc	tmp
+	; inc	tmp
 	; advance read ptr_a
 	dey
 :	iny
@@ -297,8 +297,13 @@ skip_negate:
 	adc	long_a + 2
 	sta	long_a + 2
 
-	inc16	ptr_a
-	inc16	ptr_b
+; 	lda	tmp
+; 	beq	:+
+; 	brk
+; :	inc	tmp
+
+	add16	ptr_a, 3
+	add16	ptr_b, 3
 	lda	ptr_a + 1
 	cmp	idx_a + 1
 	bne	next_sum
