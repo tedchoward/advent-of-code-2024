@@ -168,10 +168,10 @@ read_next_line:
 	.word	read_args
 	bne	error
 
-	stz	read_buffer+512
-	lda	#<read_buffer
-	ldx	#>read_buffer
-	jsr	print_string
+	; stz	read_buffer+512
+	; lda	#<read_buffer
+	; ldx	#>read_buffer
+	; jsr	print_string
 
 	ldy	#$00
 	jsr	read_long
@@ -635,7 +635,7 @@ file_path:
 	.byte	.strlen("INPUT"), "INPUT"
 
 hello_str:
-	scrcode	"Ted was here!"
+	scrcode	"Day 01 > Part 01..."
 	.byte	$8D, $00
 
 quit_str:
@@ -644,10 +644,10 @@ quit_str:
 	.byte	$00
 
 open_str:
-	scrcode	"OPEN"
+	scrcode	"Loading and sorting numbers..."
 	.byte	$8D, $00
 
 close_str:
-	scrcode "CLOSE"
+	scrcode "Calculating value..."
 	.byte	$8D, $00
 
