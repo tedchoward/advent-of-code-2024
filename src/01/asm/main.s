@@ -79,6 +79,7 @@ idx_b:
 	.word	$0000
 tmp:
 	.byte	$00
+line_cnt:
 zero_cnt:
 	.byte	$00
 
@@ -138,13 +139,8 @@ start:
 
 	; Start program
 	jsr	HOME
-	lda	#<hello_str
-	ldx	#>hello_str
-	jsr	print_string
-
-	; open file
-	lda	#<open_str
-	ldx	#>open_str
+	lda	#<loading_str
+	ldx	#>loading_str
 	jsr	print_string
 
 	jsr	PRODOS
@@ -153,41 +149,31 @@ start:
 	beq	:+
 	jmp	error
 :
-	; Set newline
+	; Copy file ref_num to arg blocks
 	lda	open_ref_num
 	sta	newline_ref_num
+	sta	read_ref_num
+	sta	close_ref_num
+
+	; Set newline
 	jsr	PRODOS
 	.byte	NEWLINE
 	.word	newline_args
 	bne	error
 
 	; Read one line into memory
-	lda	open_ref_num
-	sta	read_ref_num
-
 read_next_line:
 	jsr	PRODOS
 	.byte	READ
 	.word	read_args
 	bne	error
 
-	; stz	read_buffer+512
-	; lda	#<read_buffer
-	; ldx	#>read_buffer
-	; jsr	print_string
-
 	ldy	#$00
 	jsr	read_long
 
 	; Add long_a to list_a
-	; jsr	add_to_list_a
 	jsr	insert_list_a
 
-; 	lda	tmp
-; 	beq	:+
-; 	brk
-; :
-	; inc	tmp
 	; advance read ptr_a
 	dey
 :	iny
@@ -196,32 +182,26 @@ read_next_line:
 	beq	:-
 
 	jsr	read_long
-
-	; jsr	add_to_list_b
 	jsr	insert_list_b
 
+	; print a '.' every 25 rows
+	lda	#25
+	cmp	line_cnt
+	bne	:+
+	stz	line_cnt
+	lda	#$AE
+	jsr	COUT
+:
+	inc	line_cnt
 
-	jmp	read_next_line
-
-	;lda	long_a + 2
-	;jsr	PRBYTE
-	;lda	long_a + 1
-	;jsr	PRBYTE
-	;lda	long_a
-	;jsr	PRBYTE
-	;lda	#$8D
-	;jsr	COUT
-	;jsr	COUT
+	bra	read_next_line
 
 end_of_file:
 	; Close File
-	lda	#<close_str
-	ldx	#>close_str
+	jsr	CROUT
+	lda	#<calc_str
+	ldx	#>calc_str
 	jsr	print_string
-
-	; close args
-	lda	open_ref_num
-	sta	close_ref_num
 
 	jsr	PRODOS
 	.byte	CLOSE
@@ -236,7 +216,6 @@ error:
 
 end:
 	; we now have sorted lists
-	; TODO: iterate the lists, add up |list_a[i] - lisb_b[i]|
 	lda	#<list_a
 	sta	ptr_a
 	lda	#>list_a
@@ -300,11 +279,6 @@ skip_negate:
 	adc	long_a + 2
 	sta	long_a + 2
 
-; 	lda	tmp
-; 	beq	:+
-; 	brk
-; :	inc	tmp
-
 	add16	ptr_a, 3
 	add16	ptr_b, 3
 	lda	ptr_a + 1
@@ -314,9 +288,11 @@ skip_negate:
 	cmp	idx_a
 	bne	next_sum
 
-	jsr	CROUT
-	jsr	CROUT
+	lda	#<part_1_str
+	ldx	#>part_1_str
+	jsr	print_string
 	jsr	print_long
+	jsr	CROUT
 	jsr	CROUT
 
 	lda	#<quit_str
@@ -327,6 +303,11 @@ skip_negate:
 	jsr	PRODOS
 	.byte	QUIT
 	.word	quit_args
+
+; ***************************************************************************
+; * End Main Program, Begin support procedures                              *
+; ***************************************************************************
+
 
 ; Reads the 24-bit integer at read_buffer,Y into long_a
 ;	modifies long_a, long_b
@@ -450,13 +431,11 @@ next_val:
 :
 	; compare most significant byte
 	ldy	#$02
-	; add16	ptr_a, $02
 
 	lda	(ptr_a),Y
 	cmp	long_a + 2
 	beq	cmp_byt_1
 	bcs	insert		; long_a[2] <= ptr_a[2]
-	; inc16	ptr_a
 	add16	ptr_a, 3
 	bra	next_val
 cmp_byt_1:
@@ -541,13 +520,11 @@ next_val:
 :
 	; compare most significant byte
 	ldy	#$02
-	; add16	ptr_a, $02
 
 	lda	(ptr_a),Y
 	cmp	long_a + 2
 	beq	cmp_byt_1
 	bcs	insert		; long_a[2] <= ptr_a[2]
-	; inc16	ptr_a
 	add16	ptr_a, 3
 	bra	next_val
 cmp_byt_1:
@@ -612,45 +589,6 @@ shift_done:
 	rts
 .endproc
 
-.proc	add_to_list_a
-	lda	long_a
-	sta	(idx_a)
-	inc	idx_a
-	bne	:+
-	inc	idx_a + 1
-:	lda	long_a + 1
-	sta	(idx_a)
-	inc	idx_a
-	bne	:+
-	inc	idx_a + 1
-:	lda	long_a + 2
-	sta	(idx_a)
-	inc	idx_a
-	bne	:+
-	inc	idx_a + 1
-:	rts
-.endproc
-
-.proc	add_to_list_b
-	lda	long_a
-	sta	(idx_b)
-	inc	idx_b
-	bne	:+
-	inc	idx_b + 1
-:	lda	long_a + 1
-	sta	(idx_b)
-	inc	idx_b
-	bne	:+
-	inc	idx_b + 1
-:	lda	long_a + 2
-	sta	(idx_b)
-	inc	idx_b
-	bne	:+
-	inc	idx_b + 1
-:	rts
-.endproc
-
-
 ; Multiplies the 24-bit number in long_a by 10
 ; Stores the result in long_a
 ; long_a * 10 = long_a * 8 + long_a * 2 = long_a << 3 + long_a << 1
@@ -707,20 +645,19 @@ quit_args:
 file_path:
 	.byte	.strlen("INPUT"), "INPUT"
 
-hello_str:
-	scrcode	"Day 01 > Part 01..."
+loading_str:
+	scrcode	"Loading and sorting numbers"
 	.byte	$8D, $00
 
-quit_str:
-	.byte	$8D
-	scrcode	"Press any key to continue..."
+calc_str:
+	scrcode "Calculating value..."
+	.byte	$8D, $8D, $00
+
+part_1_str:
+	scrcode "Part 1: "
 	.byte	$00
 
-open_str:
-	scrcode	"Loading and sorting numbers..."
-	.byte	$8D, $00
-
-close_str:
-	scrcode "Calculating value..."
-	.byte	$8D, $00
+quit_str:
+	scrcode "Press any key to continue"
+	.byte	$8D, $8D, $00
 
