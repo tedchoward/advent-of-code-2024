@@ -43,6 +43,7 @@
 	; System Calls
 	HOME	= $FC58
 	KEYIN	= $FD1B
+	CROUT	= $FD8E
 	PRBYTE	= $FDDA
 	COUT	= $FDED
 	PRERR	= $FF2D
@@ -77,6 +78,8 @@ idx_a:
 idx_b:
 	.word	$0000
 tmp:
+	.byte	$00
+zero_cnt:
 	.byte	$00
 
 	.data
@@ -311,7 +314,11 @@ skip_negate:
 	cmp	idx_a
 	bne	next_sum
 
-	brk
+	jsr	CROUT
+	jsr	CROUT
+	jsr	print_long
+	jsr	CROUT
+
 	lda	#<quit_str
 	ldx	#>quit_str
 	jsr	print_string
@@ -355,6 +362,72 @@ no_inc:
 
 notdigit:
 	rts
+.endproc
+
+; prints a 24-bit unsigned decimal number
+.proc print_long
+	lda	#$03
+	sta	zero_cnt
+	ldx	#21
+	ldy	#$D8
+next_digit:
+	sty	tmp
+	lsr	long_a + 2
+	ror	long_a + 1
+	ror	long_a
+compare:
+	rol	long_a
+	rol	long_a + 1
+	rol	long_a + 2
+	bcs	subtract
+	sec
+	lda	long_a
+	sbc	tbl,X
+	lda	long_a + 1
+	sbc	tbl+1,X
+	lda	long_a + 2
+	sbc	tbl+2,X
+	bcc	output_digit
+subtract:
+	lda	long_a
+	sbc	tbl,X
+	sta	long_a
+	lda	long_a + 1
+	sbc	tbl+1,X
+	sta	long_a + 1
+	lda	long_a + 2
+	sbc	tbl+2,X
+	sta	long_a + 2
+	sec
+output_digit:
+	rol	tmp
+	bcc	compare
+	lda	tmp
+	cmp	#$B0
+	beq	digit_is_zero
+	stx	zero_cnt
+	bra	cout_digit
+digit_is_zero:
+	cpx	zero_cnt
+	bcs	skip_cout
+cout_digit:
+	jsr	COUT
+skip_cout:
+	ldy	#$1B
+	dex
+	dex
+	dex
+	bpl	next_digit
+	rts
+tbl:
+	.byte	$00, $00, $20	;          8 << 18
+	.byte	$00, $00, $28	;         80 << 15
+	.byte	$00, $00, $32	;        800 << 12
+	.byte	$00, $80, $3E	;      8,000 << 9
+	.byte	$00, $20, $4E	;     80,000 << 6
+	.byte	$00, $A8, $61	;    800,000 << 3
+	.byte	$00, $12, $7A	;  8,000,000
+	.byte	$80, $96, $98	; 10,000,000
 .endproc
 
 .proc insert_list_a
