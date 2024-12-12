@@ -1,7 +1,6 @@
 {
   "name": "advent-of-code-2024",
   "module": "index.ts",
-  "type": "module",
   "devDependencies": {
     "@eslint/js": "^9.16.0",
     "@types/bun": "latest",
@@ -12,5 +11,6 @@
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
-  }
+  },
+  "type": "module"
 }
